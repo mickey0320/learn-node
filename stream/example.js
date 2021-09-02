@@ -1,28 +1,40 @@
 const path = require("path");
 
-const ReadStream = require("./ReadStream");
-
-const rs = new ReadStream(path.resolve(__dirname, "a.txt"), {
-  highWaterMark: 3,
-  end: 4
+const WriteStream = require('./WriteStream')
+const ws = new WriteStream(path.resolve(__dirname, "./b.txt"), {
+  highWaterMark: 3
 });
+// const ws = require("fs").createWriteStream(path.resolve(__dirname, "./b.txt"), {
+//     highWaterMark: 3
+// });
+console.log(ws.write('1'))
+console.log(ws.write('1'))
+console.log(ws.write('1'))
+console.log(ws.write('1'))
 
-rs.on("open", (fd) => {
-  console.log("open:" + fd);
-});
+// const ReadStream = require("./ReadStream");
 
-rs.on("close", () => {
-  console.log("close");
-});
+// const rs = new ReadStream(path.resolve(__dirname, "a.txt"), {
+//   highWaterMark: 3,
+//   end: 4
+// });
 
-rs.on("data", (chunk) => {
-  console.log("data:" + chunk);
-});
+// rs.on("open", (fd) => {
+//   console.log("open:" + fd);
+// });
 
-rs.on("error", () => {
-  console.log("error");
-});
+// rs.on("close", () => {
+//   console.log("close");
+// });
 
-rs.on("end", () => {
-  console.log("end");
-});
+// rs.on("data", (chunk) => {
+//   console.log("data:" + chunk);
+// });
+
+// rs.on("error", () => {
+//   console.log("error");
+// });
+
+// rs.on("end", () => {
+//   console.log("end");
+// });
