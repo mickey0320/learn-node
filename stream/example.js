@@ -1,16 +1,25 @@
 const path = require("path");
 
-const WriteStream = require('./WriteStream')
+const WriteStream = require("./WriteStream");
 const ws = new WriteStream(path.resolve(__dirname, "./b.txt"), {
-  highWaterMark: 3
+  highWaterMark: 3,
 });
 // const ws = require("fs").createWriteStream(path.resolve(__dirname, "./b.txt"), {
-//     highWaterMark: 3
+//     highWaterMark: 3,
 // });
-console.log(ws.write('1'))
-console.log(ws.write('1'))
-console.log(ws.write('1'))
-console.log(ws.write('1'))
+let i = 0;
+function write() {
+  let flag = true;
+  while (i < 10 && flag) {
+    flag = ws.write((i++).toString());
+    console.log(flag);
+  }
+}
+write()
+ws.on("drain", () => {
+  console.log("写完了");
+  write();
+});
 
 // const ReadStream = require("./ReadStream");
 
