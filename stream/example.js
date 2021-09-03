@@ -1,25 +1,29 @@
 const path = require("path");
 
+const ReadStream = require("./ReadStream");
 const WriteStream = require("./WriteStream");
+const rs = new ReadStream(path.resolve(__dirname, "./a.txt"),{
+    highWaterMark: 4
+})
 const ws = new WriteStream(path.resolve(__dirname, "./b.txt"), {
-  highWaterMark: 3,
+  highWaterMark: 1,
 });
-// const ws = require("fs").createWriteStream(path.resolve(__dirname, "./b.txt"), {
-//     highWaterMark: 3,
+
+rs.pipe(ws)
+
+// let i = 0;
+// function write() {
+//   let flag = true;
+//   while (i < 10 && flag) {
+//     flag = ws.write((i++).toString());
+//     console.log(flag);
+//   }
+// }
+// write()
+// ws.on("drain", () => {
+//   console.log("写完了");
+//   write();
 // });
-let i = 0;
-function write() {
-  let flag = true;
-  while (i < 10 && flag) {
-    flag = ws.write((i++).toString());
-    console.log(flag);
-  }
-}
-write()
-ws.on("drain", () => {
-  console.log("写完了");
-  write();
-});
 
 // const ReadStream = require("./ReadStream");
 

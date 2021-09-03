@@ -61,13 +61,6 @@ class WriteStream extends EventEmitter {
       this.offset += written;
       this.length -= written;
       cb();
-      if (this.length === 0 && this.cache.length === 0) {
-        fs.close(this.fd, () => {
-          if (this.emitClose) {
-            this.emit("close");
-          }
-        });
-      }
     });
   };
   clearCache = () => {
