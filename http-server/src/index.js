@@ -7,6 +7,7 @@ const { createReadStream, readFileSync } = require("fs");
 const ejs = require("ejs");
 const mime = require("mime");
 const crypto = require("crypto");
+const zlib = require("zlib");
 
 const util = require("./util");
 
@@ -22,7 +23,7 @@ class Server {
     this.cache = options.cache;
     this.gzip = options.gzip;
   }
-  cache(req, res, requestFile, statObj) {
+  cache = (req, res, requestFile, statObj) => {
     res.setHeader("Cache-Control", "max-age=10");
     res.setHeader("Expires", new Date(Date.now() + 10 * 1000)).toUTCString();
     const ifModifiedSine = req.headers["if-modified-since"];
@@ -39,15 +40,29 @@ class Server {
 
     return true;
   }
+  gzipFile = (req, res, requestFile, statObj) => {
+    const acceptEncoding = req.headers["accept-encoding"];
+    if (acceptEncoding.includes("gzip")) {
+      res.setHeader("Content-Encoding", "gzip");
+      return zlib.createGzip();
+    } else if (acceptEncoding.includes("deflate")) {
+      res.setHeader("Content-Encoding", "deflate");
+      return zlib.createDeflate();
+    }
+
+    return false;
+  }
   sendFile(req, res, requestFile, statObj) {
     if (this.cache(req, res, requestFile, statObj)) {
       res.statusCode = 304;
       res.end();
+      return;
+    }
+    res.setHeader("Content-Type", `${mime.getType(requestFile)};charset=utf-8`);
+    const zlibStream = this.gzipFile(req, res, requestFile, statObj);
+    if (zlibStream) {
+      createReadStream(requestFile).pipe(zlibStream).pipe(res);
     } else {
-      res.setHeader(
-        "Content-Type",
-        `${mime.getType(requestFile)};charset=utf-8`
-      );
       createReadStream(requestFile).pipe(res);
     }
   }
@@ -65,7 +80,7 @@ class Server {
         const html = await ejs.render(template, {
           dirs: dirs.map((dir) => ({
             name: dir,
-            href: `${pathname}/${dir}`,
+            href: path.join(pathname, dir),
           })),
         });
         res.setHeader("Content-Type", "text/html;charset=utf-8");
