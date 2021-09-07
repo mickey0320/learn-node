@@ -6,6 +6,7 @@ const fs = require("fs").promises;
 const { createReadStream, readFileSync } = require("fs");
 const ejs = require("ejs");
 const mime = require("mime");
+const crypto = require("crypto");
 
 const util = require("./util");
 
@@ -21,9 +22,34 @@ class Server {
     this.cache = options.cache;
     this.gzip = options.gzip;
   }
-  sendFile(req, res, requestFile) {
-    res.setHeader("Content-Type", `${mime.getType(requestFile)};charset=utf-8`);
-    createReadStream(requestFile).pipe(res);
+  cache(req, res, requestFile, statObj) {
+    res.setHeader("Cache-Control", "max-age=10");
+    res.setHeader("Expires", new Date(Date.now() + 10 * 1000)).toUTCString();
+    const ifModifiedSine = req.headers["if-modified-since"];
+    // 有可能时间一样，但内容不一样，所以要走接下来的etag逻辑
+    if (ifModifiedSine !== statObj.ctime.toUTCString()) {
+      return false;
+    }
+    const ifNoneMatch = req.headers["if-none-match"];
+    const content = fs.readFileSync(requestFile);
+    const etag = crypto.createHash("md5").update(content).digest("base64");
+    if (etag !== ifNoneMatch) {
+      return false;
+    }
+
+    return true;
+  }
+  sendFile(req, res, requestFile, statObj) {
+    if (this.cache(req, res, requestFile, statObj)) {
+      res.statusCode = 304;
+      res.end();
+    } else {
+      res.setHeader(
+        "Content-Type",
+        `${mime.getType(requestFile)};charset=utf-8`
+      );
+      createReadStream(requestFile).pipe(res);
+    }
   }
   sendError(res, err) {
     res.statusCode = 404;
@@ -45,7 +71,7 @@ class Server {
         res.setHeader("Content-Type", "text/html;charset=utf-8");
         res.end(html);
       } else {
-        this.sendFile(req, res, requestFile);
+        this.sendFile(req, res, requestFile, stat);
       }
     } catch (err) {
       this.sendError(res, err);
